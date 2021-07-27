@@ -2,7 +2,7 @@
 ![badmath](https://img.shields.io/github/repo-size/TheHebi/sql-employee-tracker)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Demonstration of application in action located <a href="https://www.youtube.com/watch?v=qh_pXoOuc3o&t=3s">here</a>.
+Demonstration of application in action located <a href="https://www.youtube.com/watch?v=JdLfQKYftWg">here</a>.
 
 
 ## Table of Contents
