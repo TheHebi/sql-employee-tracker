@@ -15,16 +15,19 @@ const db = mysql.createConnection(
 );
 
 const seeEmployees = () => {
-  db.query(`SELECT employees.id, employees.first_name, employees.last_name, roles.title, department.name AS department,
-  roles.salary, CONCAT (manager.first_name, " ", manager.last_name) AS manager FROM employees LEFT JOIN roles ON employees.roles_id = roles.id LEFT JOIN department ON roles.department_id = department.id LEFT JOIN employees manager ON employees.manager_id = manager.id`, (err, data) => {
-    if (err) {
-      console.log(err);
-      db.end();
-    } else {
-      console.table(data);
-      main();
+  db.query(
+    `SELECT employees.id, employees.first_name, employees.last_name, roles.title, department.name AS department,
+  roles.salary, CONCAT (manager.first_name, " ", manager.last_name) AS manager FROM employees LEFT JOIN roles ON employees.roles_id = roles.id LEFT JOIN department ON roles.department_id = department.id LEFT JOIN employees manager ON employees.manager_id = manager.id`,
+    (err, data) => {
+      if (err) {
+        console.log(err);
+        db.end();
+      } else {
+        console.table(data);
+        main();
+      }
     }
-  });
+  );
 };
 
 const seeRoles = () => {
@@ -129,63 +132,93 @@ const addRole = () => {
   });
 };
 
-const addEmployee = () => {
-  db.query("SELECT * FROM roles", (err, data) => {
-    if (err) {
-      console.log(err);
-      db.end();
-    } else {
-      const inqRoles = data.map((roles) => {
-        return {
-          name: roles.title,
-          value: roles.id,
-        };
-      });
-      
-      inquirer
-        .prompt([
-          {
+async function addEmployee() {
+    const addname = await inquirer.prompt([
+        {
             type: "input",
-            message: "Employee's first name??",
-            name: "first_name",
-          },
-          {
+            message: "What is the employee's first name?",
+            name: "first"
+        },
+        {
             type: "input",
-            message: "Employee's last name?",
-            name: "last_name",
-          },
-          {
-            type: "list",
-            message: "What is this employee's role?",
-            choices: inqRoles,
-            name: "roles_id",
-          },
-        //   {
-        //     type: "list",
-        //     message: "Who is this employees manager?",
-        //     choices: selectManager(),
-        //     name: "manager_id",
-        //   },
-        ])
-        .then((answers) => {
-          console.log(answers);
-          db.query(
-            `INSERT INTO employees (first_name,last_name,roles_id) VALUES(?,?,?)`,
-            [answers.first_name, answers.last_name, answers.roles_id],
-            (err, data) => {
-              if (err) {
-                console.log(err);
-                db.end();
-              } else {
-                console.log("Role added!");
-                seeEmployees();
-              }
+            message: "What is the Employee's last name?",
+            name: "last"
+        }
+    ]);
+    db.query('SELECT roles.id, roles.title FROM roles ORDER BY roles.id;', async (err, res) => {
+        if (err) throw err;
+        const { roles } = await inquirer.prompt([
+            {
+                name: 'roles',
+                type: 'list',
+                choices: () => res.map(res => res.title),
+                message: 'What is the employee role?: '
             }
-          );
+        ]);
+        let roleId;
+        for (const row of res) {
+            if (row.title === roles) {
+                roleId = row.id;
+                continue;
+            }
+        }
+        db.query('SELECT * FROM employees', async (err, res) => {
+            if (err) throw err;
+            let choices = res.map(res => `${res.first_name} ${res.last_name}`);
+            choices.push('none');
+            let { manager } = await inquirer.prompt([
+                {
+                    name: 'manager',
+                    type: 'list',
+                    choices: choices,
+                    message: "Choose the employee's Manager:"
+                }
+            ]);
+            let manager_id;
+            let managerName;
+            if (manager === 'none') {
+                manager_id = null;
+            } else {
+                for (const data of res) {
+                    data.fullName = `${data.first_name} ${data.last_name}`;
+                    if (data.fullName === manager) {
+                        manager_id = data.id;
+                        managerName = data.fullName;
+                        continue;
+                    }
+                }
+            }
+            console.log('Employee Added');
+            db.query(
+                'INSERT INTO employees SET ?',
+                {
+                    first_name: addname.first,
+                    last_name: addname.last,
+                    roles_id: roleId,
+                    manager_id: manager_id
+                },
+                (err, res) => {
+                    if (err) throw err;
+                    seeEmployees();
+
+                }
+            );
         });
+    });
+
+}
+
+var managersArr = ["NULL"];
+function selectManager() {
+  db.query("SELECT * FROM employees", function(err, res) {
+    if (err) throw err
+    for (var i = 0; i < res.length; i++) {
+      managersArr.push(res[i].first_name);
     }
-  });
-};
+
+  })
+  return managersArr;
+}
 
 const main = () => {
   inquirer
@@ -213,6 +246,7 @@ const main = () => {
           addEmployee();
           break;
         case "Update Employee Role":
+          updateRole();
           break;
         case "View All Roles":
           seeRoles();
