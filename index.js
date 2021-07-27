@@ -133,79 +133,129 @@ const addRole = () => {
 };
 
 async function addEmployee() {
-    const addname = await inquirer.prompt([
+  const addname = await inquirer.prompt([
+    {
+      type: "input",
+      message: "What is the employee's first name?",
+      name: "first",
+    },
+    {
+      type: "input",
+      message: "What is the Employee's last name?",
+      name: "last",
+    },
+  ]);
+  db.query(
+    "SELECT roles.id, roles.title FROM roles ORDER BY roles.id;",
+    async (err, res) => {
+      if (err) throw err;
+      const { roles } = await inquirer.prompt([
         {
-            type: "input",
-            message: "What is the employee's first name?",
-            name: "first"
+          name: "roles",
+          type: "list",
+          choices: () => res.map((res) => res.title),
+          message: "What is the employee's role?: ",
         },
-        {
-            type: "input",
-            message: "What is the Employee's last name?",
-            name: "last"
+      ]);
+      let roleId;
+      for (const row of res) {
+        if (row.title === roles) {
+          roleId = row.id;
+          continue;
         }
-    ]);
-    db.query('SELECT roles.id, roles.title FROM roles ORDER BY roles.id;', async (err, res) => {
+      }
+      db.query("SELECT * FROM employees", async (err, res) => {
         if (err) throw err;
-        const { roles } = await inquirer.prompt([
-            {
-                name: 'roles',
-                type: 'list',
-                choices: () => res.map(res => res.title),
-                message: 'What is the employee role?: '
-            }
+        let choices = res.map((res) => `${res.first_name} ${res.last_name}`);
+        choices.push("none");
+        let { manager } = await inquirer.prompt([
+          {
+            name: "manager",
+            type: "list",
+            choices: choices,
+            message: "Choose the employee's Manager:",
+          },
         ]);
-        let roleId;
-        for (const row of res) {
-            if (row.title === roles) {
-                roleId = row.id;
-                continue;
+        let manager_id;
+        let managerName;
+        if (manager === "none") {
+          manager_id = null;
+        } else {
+          for (const data of res) {
+            data.fullName = `${data.first_name} ${data.last_name}`;
+            if (data.fullName === manager) {
+              manager_id = data.id;
+              managerName = data.fullName;
+              continue;
             }
+          }
         }
-        db.query('SELECT * FROM employees', async (err, res) => {
+        console.log("Employee Added");
+        db.query(
+          "INSERT INTO employees SET ?",
+          {
+            first_name: addname.first,
+            last_name: addname.last,
+            roles_id: roleId,
+            manager_id: manager_id,
+          },
+          (err, res) => {
             if (err) throw err;
-            let choices = res.map(res => `${res.first_name} ${res.last_name}`);
-            choices.push('none');
-            let { manager } = await inquirer.prompt([
-                {
-                    name: 'manager',
-                    type: 'list',
-                    choices: choices,
-                    message: "Choose the employee's Manager:"
-                }
-            ]);
-            let manager_id;
-            let managerName;
-            if (manager === 'none') {
-                manager_id = null;
-            } else {
-                for (const data of res) {
-                    data.fullName = `${data.first_name} ${data.last_name}`;
-                    if (data.fullName === manager) {
-                        manager_id = data.id;
-                        managerName = data.fullName;
-                        continue;
-                    }
-                }
-            }
-            console.log('Employee Added');
-            db.query(
-                'INSERT INTO employees SET ?',
-                {
-                    first_name: addname.first,
-                    last_name: addname.last,
-                    roles_id: roleId,
-                    manager_id: manager_id
-                },
-                (err, res) => {
-                    if (err) throw err;
-                    seeEmployees();
+            seeEmployees();
+          }
+        );
+      });
+    }
+  );
+}
 
-                }
-            );
-        });
-    });
-
+async function updateRole() {
+  const addname = await inquirer.prompt([
+    {
+      type: "input",
+      message: "What is the employee's first name?",
+      name: "first",
+    },
+    {
+      type: "input",
+      message: "What is the Employee's last name?",
+      name: "last",
+    },
+  ]);
+  db.query(
+    "SELECT roles.id, roles.title FROM roles ORDER BY roles.id;",
+    async (err, res) => {
+      if (err) throw err;
+      const { roles } = await inquirer.prompt([
+        {
+          name: "roles",
+          type: "list",
+          choices: () => res.map((res) => res.title),
+          message: "What is the employee's new role?: ",
+        },
+      ]);
+      let roleId;
+      for (const row of res) {
+        if (row.title === roles) {
+          roleId = row.id;
+          continue;
+        }
+      }
+      console.log("Employee role updated!");
+      db.query(
+        "UPDATE employees SET roles_id = ? WHERE first_name = ? AND last_name = ?",
+        [
+          roleId,
+          addname.first,
+          addname.last,
+        ],
+        (err, res) => {
+          if (err) throw err;
+          seeEmployees();
+        }
+      );
+    }
+  );
 }
 
 const main = () => {
