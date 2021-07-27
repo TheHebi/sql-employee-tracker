@@ -50,6 +50,84 @@ const seeDepartments = () => {
   });
 };
 
+const addDepartment = () => {
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        message: "Department Name?",
+        name: "name",
+      },
+    ])
+    .then((answers) => {
+      db.query(
+        `INSERT INTO department (name) VALUES(?)`,
+        [answers.name],
+        (err, data) => {
+          if (err) {
+            console.log(err);
+            db.end();
+          } else {
+            console.log("Department Added!");
+            seeDepartments();
+          }
+        }
+      );
+    });
+};
+
+const addRole = () => {
+  db.query("SELECT * FROM department", (err, data) => {
+    if (err) {
+      console.log(err);
+      db.end();
+    } else {
+      const inqDeps = data.map((department) => {
+        return {
+          name: department.name,
+          value: department.id,
+        };
+      });
+      inquirer
+        .prompt([
+          {
+            type: "input",
+            message: "Name of Role?",
+            name: "name",
+          },
+          {
+            type: "list",
+            message: "Which department does this role belong to?",
+            choices: inqDeps,
+            name: "department_id",
+          },
+
+          {
+            type: "input",
+            message: "What is this roles salary?",
+            name: "salary",
+          }
+        ])
+        .then((answers) => {
+          console.log(answers);
+          db.query(
+            `INSERT INTO roles (title,salary,department_id) VALUES(?,?,?)`,
+            [answers.name, answers.salary,answers.department_id],
+            (err, data) => {
+              if (err) {
+                console.log(err);
+                db.end();
+              } else {
+                console.log("Role added!");
+                seeRoles();
+              }
+            }
+          );
+        });
+    }
+  });
+};
+
 const main = () => {
   inquirer
     .prompt({
@@ -80,11 +158,13 @@ const main = () => {
           seeRoles();
           break;
         case "Add Role":
+          addRole();
           break;
         case "View All Departments":
           seeDepartments();
           break;
         case "Add Department":
+          addDepartment();
           break;
 
         default:
