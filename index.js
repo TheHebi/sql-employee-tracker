@@ -15,7 +15,8 @@ const db = mysql.createConnection(
 );
 
 const seeEmployees = () => {
-  db.query(`SELECT * FROM employees`, (err, data) => {
+  db.query(`SELECT employees.id, employees.first_name, employees.last_name, roles.title, department.name AS department,
+  roles.salary, CONCAT (manager.first_name, " ", manager.last_name) AS manager FROM employees LEFT JOIN roles ON employees.roles_id = roles.id LEFT JOIN department ON roles.department_id = department.id LEFT JOIN employees manager ON employees.manager_id = manager.id`, (err, data) => {
     if (err) {
       console.log(err);
       db.end();
@@ -106,13 +107,13 @@ const addRole = () => {
             type: "input",
             message: "What is this roles salary?",
             name: "salary",
-          }
+          },
         ])
         .then((answers) => {
           console.log(answers);
           db.query(
             `INSERT INTO roles (title,salary,department_id) VALUES(?,?,?)`,
-            [answers.name, answers.salary,answers.department_id],
+            [answers.name, answers.salary, answers.department_id],
             (err, data) => {
               if (err) {
                 console.log(err);
@@ -120,6 +121,64 @@ const addRole = () => {
               } else {
                 console.log("Role added!");
                 seeRoles();
+              }
+            }
+          );
+        });
+    }
+  });
+};
+
+const addEmployee = () => {
+  db.query("SELECT * FROM roles", (err, data) => {
+    if (err) {
+      console.log(err);
+      db.end();
+    } else {
+      const inqRoles = data.map((roles) => {
+        return {
+          name: roles.title,
+          value: roles.id,
+        };
+      });
+      
+      inquirer
+        .prompt([
+          {
+            type: "input",
+            message: "Employee's first name??",
+            name: "first_name",
+          },
+          {
+            type: "input",
+            message: "Employee's last name?",
+            name: "last_name",
+          },
+          {
+            type: "list",
+            message: "What is this employee's role?",
+            choices: inqRoles,
+            name: "roles_id",
+          },
+        //   {
+        //     type: "list",
+        //     message: "Who is this employees manager?",
+        //     choices: selectManager(),
+        //     name: "manager_id",
+        //   },
+        ])
+        .then((answers) => {
+          console.log(answers);
+          db.query(
+            `INSERT INTO employees (first_name,last_name,roles_id) VALUES(?,?,?)`,
+            [answers.first_name, answers.last_name, answers.roles_id],
+            (err, data) => {
+              if (err) {
+                console.log(err);
+                db.end();
+              } else {
+                console.log("Role added!");
+                seeEmployees();
               }
             }
           );
@@ -151,6 +210,7 @@ const main = () => {
           seeEmployees();
           break;
         case "Add Employee":
+          addEmployee();
           break;
         case "Update Employee Role":
           break;
