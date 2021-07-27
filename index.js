@@ -11,7 +11,7 @@ const db = mysql.createConnection(
     password: "password",
     database: "employees_db",
   },
-  console.log(`Connected to the movies_bd database.`)
+  console.log(`Connected to the employees_db database.`)
 );
 
 const seeEmployees = () => {
@@ -113,7 +113,6 @@ const addRole = () => {
           },
         ])
         .then((answers) => {
-          console.log(answers);
           db.query(
             `INSERT INTO roles (title,salary,department_id) VALUES(?,?,?)`,
             [answers.name, answers.salary, answers.department_id],
