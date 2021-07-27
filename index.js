@@ -208,18 +208,6 @@ async function addEmployee() {
 
 }
 
-var managersArr = ["NULL"];
-function selectManager() {
-  db.query("SELECT * FROM employees", function(err, res) {
-    if (err) throw err
-    for (var i = 0; i < res.length; i++) {
-      managersArr.push(res[i].first_name);
-    }
-
-  })
-  return managersArr;
-}
-
 const main = () => {
   inquirer
     .prompt({
